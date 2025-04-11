@@ -1,0 +1,17 @@
+{
+    "sample_id": 85,
+    "timestamp": "2025-04-11 12:03:59",
+    "depression_probability": 0.7171419858932495,
+    "risk_level": "High",
+    "observations": [
+        "High probability of depression detected.",
+        "Overall risk assessment indicates high risk for depression. Professional intervention is recommended."
+    ],
+    "suggestions": [
+        "Urgent consultation with a mental health professional",
+        "Consider therapy or counseling",
+        "Establish a support network",
+        "Monitor symptoms closely",
+        "Develop a safety plan if needed"
+    ]
+}

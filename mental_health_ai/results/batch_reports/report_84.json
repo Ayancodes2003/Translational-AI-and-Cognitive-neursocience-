@@ -1,0 +1,16 @@
+{
+    "sample_id": 84,
+    "timestamp": "2025-04-11 12:03:59",
+    "depression_probability": 0.4927472472190857,
+    "risk_level": "Moderate",
+    "observations": [
+        "Moderate probability of depression detected.",
+        "Overall risk assessment indicates moderate risk for depression. Regular monitoring is recommended."
+    ],
+    "suggestions": [
+        "Consider consulting a mental health professional",
+        "Increase self-care activities",
+        "Monitor mood changes",
+        "Practice mindfulness and relaxation techniques"
+    ]
+}

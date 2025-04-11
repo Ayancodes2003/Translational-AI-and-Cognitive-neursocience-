@@ -1,0 +1,22 @@
+{
+    "timestamp": "2025-04-11 12:03:00",
+    "depression_probability": 0.36807548999786377,
+    "risk_level": "Moderate",
+    "modality_contributions": {
+        "eeg": 0.45,
+        "audio": 0.35,
+        "text": 0.2
+    },
+    "observations": [
+        "Moderate probability of depression detected.",
+        "EEG patterns show significant indicators of altered brain activity.",
+        "Speech patterns show notable changes in vocal characteristics.",
+        "Overall risk assessment indicates moderate risk for depression. Regular monitoring is recommended."
+    ],
+    "suggestions": [
+        "Consider consulting a mental health professional",
+        "Increase self-care activities",
+        "Monitor mood changes",
+        "Practice mindfulness and relaxation techniques"
+    ]
+}

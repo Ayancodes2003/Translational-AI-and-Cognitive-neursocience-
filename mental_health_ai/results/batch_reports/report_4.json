@@ -1,0 +1,15 @@
+{
+    "sample_id": 4,
+    "timestamp": "2025-04-11 12:03:59",
+    "depression_probability": 0.24837028980255127,
+    "risk_level": "Low",
+    "observations": [
+        "Low probability of depression detected.",
+        "Overall risk assessment indicates low risk for depression. Continued monitoring is recommended."
+    ],
+    "suggestions": [
+        "Continue regular self-monitoring",
+        "Maintain healthy lifestyle habits",
+        "Practice stress management techniques"
+    ]
+}

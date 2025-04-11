@@ -1,0 +1,10 @@
+{
+    "timestamp": "2025-04-11 12:03:59",
+    "num_reports": 100,
+    "risk_levels": {
+        "Low": 9,
+        "Moderate": 83,
+        "High": 8
+    },
+    "average_probability": 0.4926914018392563
+}

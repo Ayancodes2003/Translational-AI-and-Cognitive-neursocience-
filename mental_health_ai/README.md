@@ -88,8 +88,18 @@ python -m train.evaluate --model_path models/saved/fusion_model.pt
 
 ### Web Interface
 
+We provide two options for running the web interface:
+
+1. **Full Web Interface**: This includes all features of the Mental Health AI system.
+
 ```bash
 streamlit run app.py
+```
+
+2. **Simple Demo Interface**: This is a lightweight version that uses synthetic data for demonstration.
+
+```bash
+streamlit run streamlit_app.py
 ```
 
 ## Results
