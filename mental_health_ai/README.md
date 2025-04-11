@@ -61,13 +61,18 @@ pip install -r requirements.txt
 
 ### Data Preparation
 
-1. Download the DEAP dataset for EEG data
-2. Download the DAIC-WOZ dataset for audio and text data
-3. Run the preprocessing scripts:
+The system automatically downloads and processes data from public datasets:
+
+1. Run the dataset loader to download and process all datasets:
    ```
-   python -m data.preprocess_eeg
-   python -m data.preprocess_audio
-   python -m data.preprocess_text
+   python -m data.dataset_loader
+   ```
+
+2. Alternatively, run the preprocessing scripts individually:
+   ```
+   python -m data.eeg.preprocess_eeg
+   python -m data.audio.preprocess_audio
+   python -m data.text.preprocess_text
    ```
 
 ### Training Models
@@ -120,8 +125,38 @@ Performance metrics and visualizations are available in the `results` directory.
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
+## Datasets
+
+The system uses publicly available datasets that are automatically downloaded when needed:
+
+### EEG Datasets
+
+1. **MNE Sample Dataset**: Contains EEG and MEG data from a simple auditory and visual stimulation paradigm.
+
+2. **EEG Motor Movement/Imagery Dataset**: Contains EEG recordings of subjects performing motor movement and motor imagery tasks. Available through MNE-Python's interface to PhysioNet.
+
+### Audio Datasets
+
+1. **RAVDESS Dataset**: The Ryerson Audio-Visual Database of Emotional Speech and Song contains emotional speech recordings from professional actors. Available through Hugging Face Datasets.
+
+2. **CREMA-D Dataset**: Crowd-sourced Emotional Multimodal Actors Dataset contains emotional speech recordings. Available through Hugging Face Datasets.
+
+### Text Datasets
+
+1. **dair-ai/emotion Dataset**: Contains text with emotion labels. Available through Hugging Face Datasets.
+
+2. **go_emotions Dataset**: Contains text with multiple emotion labels. Available through Hugging Face Datasets.
+
+3. **tweet_eval (emotion)**: Contains tweets with emotion labels. Available through Hugging Face Datasets.
+
+### Fallback Mechanism
+
+If any of the datasets cannot be downloaded or accessed, the system will automatically fall back to using synthetic data to ensure the pipeline can still run.
+
 ## Acknowledgements
 
-- DEAP dataset for EEG data
-- DAIC-WOZ dataset for audio and text data
+- MNE Sample Dataset for EEG data
+- RAVDESS and CREMA-D datasets for audio data
+- dair-ai/emotion, go_emotions, and tweet_eval datasets for text data
+- Hugging Face Datasets for providing easy access to public datasets
 - All contributors and researchers in the field of AI for mental health

@@ -17,3 +17,6 @@ streamlit>=1.10.0
 reportlab>=3.6.0
 pyyaml>=6.0.0
 pillow>=8.0.0
+datasets>=2.0.0
+tensorflow-datasets>=4.0.0
+huggingface-hub>=0.10.0
