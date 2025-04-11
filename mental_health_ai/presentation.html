@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mental Health AI Model Comparison</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .slide {
+            width: 90%;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 30px;
+            background-color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            page-break-after: always;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #3498db;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .highlight {
+            background-color: #e8f4f8;
+            font-weight: bold;
+        }
+        .chart {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+            display: block;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #7f8c8d;
+            text-align: center;
+        }
+        .two-column {
+            display: flex;
+            justify-content: space-between;
+        }
+        .column {
+            width: 48%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Title Slide -->
+    <div class="slide">
+        <h1 style="font-size: 32px; text-align: center; border: none;">Mental Health AI</h1>
+        <h2 style="font-size: 24px; text-align: center; color: #7f8c8d;">Model Comparison for Depression Detection</h2>
+        <div style="text-align: center; margin: 50px 0;">
+            <img src="demo_results/model_comparison.png" alt="Model Comparison" style="width: 80%; max-width: 600px;">
+        </div>
+        <div class="footer">
+            <p>Translational AI and Cognitive Neuroscience Project</p>
+            <p>Date: April 11, 2025</p>
+        </div>
+    </div>
+
+    <!-- Overview Slide -->
+    <div class="slide">
+        <h1>Project Overview</h1>
+        <h2>Objectives</h2>
+        <ul>
+            <li>Develop AI models for depression detection using multimodal data</li>
+            <li>Compare different deep learning architectures</li>
+            <li>Identify the most effective model for clinical applications</li>
+        </ul>
+        <h2>Approach</h2>
+        <ul>
+            <li>Implemented three different neural network architectures</li>
+            <li>Trained models on synthetic data (for demonstration)</li>
+            <li>Evaluated performance using standard metrics</li>
+            <li>Analyzed training behavior and computational efficiency</li>
+        </ul>
+    </div>
+
+    <!-- Models Slide -->
+    <div class="slide">
+        <h1>Model Architectures</h1>
+        <div class="two-column">
+            <div class="column">
+                <h2>SimpleNN</h2>
+                <ul>
+                    <li>Simple feedforward neural network</li>
+                    <li>One hidden layer with 64 neurons</li>
+                    <li>ReLU activation and dropout</li>
+                    <li>Computationally efficient</li>
+                </ul>
+                <h2>LSTM</h2>
+                <ul>
+                    <li>Long Short-Term Memory network</li>
+                    <li>2 LSTM layers with 64 hidden units</li>
+                    <li>Designed for sequential data</li>
+                    <li>More computationally intensive</li>
+                </ul>
+            </div>
+            <div class="column">
+                <h2>CNN</h2>
+                <ul>
+                    <li>Convolutional Neural Network</li>
+                    <li>2 convolutional layers (16 and 32 filters)</li>
+                    <li>Max pooling and dropout regularization</li>
+                    <li>Fully connected layers for classification</li>
+                    <li>Effective at capturing spatial patterns</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Slide -->
+    <div class="slide">
+        <h1>Performance Comparison</h1>
+        <table>
+            <tr>
+                <th>Model</th>
+                <th>Accuracy</th>
+                <th>Precision</th>
+                <th>Recall</th>
+                <th>F1 Score</th>
+                <th>AUC</th>
+                <th>Training Time (s)</th>
+            </tr>
+            <tr>
+                <td>SimpleNN</td>
+                <td>0.855</td>
+                <td>0.798</td>
+                <td>0.882</td>
+                <td>0.838</td>
+                <td>0.941</td>
+                <td>0.29</td>
+            </tr>
+            <tr>
+                <td>LSTM</td>
+                <td>0.500</td>
+                <td>0.450</td>
+                <td>0.788</td>
+                <td>0.573</td>
+                <td>0.532</td>
+                <td>2.13</td>
+            </tr>
+            <tr class="highlight">
+                <td>CNN</td>
+                <td>0.900</td>
+                <td>0.849</td>
+                <td>0.929</td>
+                <td>0.888</td>
+                <td>0.970</td>
+                <td>0.86</td>
+            </tr>
+        </table>
+        <p><strong>Key Finding:</strong> CNN model achieved the highest performance across all metrics with reasonable training time.</p>
+    </div>
+
+    <!-- CNN Results Slide -->
+    <div class="slide">
+        <h1>CNN Model Performance</h1>
+        <div class="two-column">
+            <div class="column">
+                <h2>Training Curves</h2>
+                <img src="demo_results/CNN_training_curves.png" alt="CNN Training Curves" style="width: 100%;">
+                <p>The model shows steady improvement in both training and validation metrics, indicating good generalization.</p>
+            </div>
+            <div class="column">
+                <h2>Confusion Matrix</h2>
+                <img src="demo_results/CNN_confusion_matrix.png" alt="CNN Confusion Matrix" style="width: 100%;">
+                <p>The confusion matrix shows strong performance in both classes with few false negatives (6).</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SimpleNN Results Slide -->
+    <div class="slide">
+        <h1>SimpleNN Model Performance</h1>
+        <div class="two-column">
+            <div class="column">
+                <h2>Training Curves</h2>
+                <img src="demo_results/SimpleNN_training_curves.png" alt="SimpleNN Training Curves" style="width: 100%;">
+                <p>Good convergence with minimal overfitting, but doesn't reach the same performance level as CNN.</p>
+            </div>
+            <div class="column">
+                <h2>Confusion Matrix</h2>
+                <img src="demo_results/SimpleNN_confusion_matrix.png" alt="SimpleNN Confusion Matrix" style="width: 100%;">
+                <p>Slightly more false positives (19) and false negatives (10) compared to CNN.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- LSTM Results Slide -->
+    <div class="slide">
+        <h1>LSTM Model Performance</h1>
+        <div class="two-column">
+            <div class="column">
+                <h2>Training Curves</h2>
+                <img src="demo_results/LSTM_training_curves.png" alt="LSTM Training Curves" style="width: 100%;">
+                <p>Minimal improvement during training, suggesting the model architecture may not be suitable for this task.</p>
+            </div>
+            <div class="column">
+                <h2>Confusion Matrix</h2>
+                <img src="demo_results/LSTM_confusion_matrix.png" alt="LSTM Confusion Matrix" style="width: 100%;">
+                <p>High number of false positives (82), indicating poor specificity.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Findings Slide -->
+    <div class="slide">
+        <h1>Key Findings</h1>
+        <h2>1. CNN Superiority</h2>
+        <p>The CNN model outperformed other architectures across all metrics, achieving 90% accuracy and 0.97 AUC.</p>
+        
+        <h2>2. Efficiency Considerations</h2>
+        <p>SimpleNN offers a good balance between performance (85.5% accuracy) and computational efficiency (0.29s training time).</p>
+        
+        <h2>3. LSTM Limitations</h2>
+        <p>The LSTM model performed poorly despite longer training time, suggesting sequential modeling may not be optimal for this task.</p>
+        
+        <h2>4. Clinical Implications</h2>
+        <p>High recall (92.9%) of the CNN model is particularly important for clinical applications to minimize missed cases of depression.</p>
+    </div>
+
+    <!-- Conclusion Slide -->
+    <div class="slide">
+        <h1>Conclusion and Next Steps</h1>
+        <h2>Conclusion</h2>
+        <p>The CNN architecture demonstrates superior performance for depression detection, likely due to its ability to capture spatial patterns in the data.</p>
+        
+        <h2>Next Steps</h2>
+        <ul>
+            <li>Train models on real-world multimodal data (EEG, audio, text)</li>
+            <li>Implement ensemble methods to combine strengths of different models</li>
+            <li>Explore more complex architectures such as transformer-based models</li>
+            <li>Conduct ablation studies to identify the most important features</li>
+            <li>Validate models in clinical settings</li>
+        </ul>
+        
+        <div class="footer">
+            <p>Thank you for your attention!</p>
+        </div>
+    </div>
+</body>
+</html>
