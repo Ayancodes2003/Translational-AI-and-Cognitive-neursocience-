@@ -167,34 +167,7 @@ class DatasetLoader:
 
             except Exception as e:
                 logger.error(f"Error loading EEG Motor Movement/Imagery Dataset: {e}")
-                logger.info("Falling back to synthetic EEG data")
-
-                # Generate synthetic EEG data as fallback
-                n_samples = 100
-                n_channels = 32
-                n_times = 1000
-
-                # Create synthetic EEG data
-                epochs_data = np.random.randn(n_samples, n_channels, n_times)
-
-                # Create synthetic labels (binary classification: depressed/non-depressed)
-                # Also create PHQ-8 scores (0-24 scale)
-                binary_labels = np.random.randint(0, 2, size=(n_samples, 1))
-                phq8_scores = np.zeros((n_samples, 1))
-
-                # Assign PHQ-8 scores based on binary label
-                for i in range(n_samples):
-                    if binary_labels[i, 0] == 0:  # Non-depressed
-                        phq8_scores[i, 0] = np.random.randint(0, 10)  # PHQ-8 < 10: non-depressed
-                    else:  # Depressed
-                        phq8_scores[i, 0] = np.random.randint(10, 25)  # PHQ-8 >= 10: depressed
-
-                # Combine binary labels and PHQ-8 scores
-                labels = np.hstack((binary_labels, phq8_scores))
-
-                logger.info(f"Generated synthetic EEG data with shape {epochs_data.shape} and labels with shape {labels.shape}")
-
-                return epochs_data, labels
+                raise ValueError("Could not load any EEG dataset. Please check your internet connection or install MNE properly.")
 
     def load_audio_data(self):
         """
@@ -314,29 +287,7 @@ class DatasetLoader:
 
             except Exception as e:
                 logger.error(f"Error loading CREMA-D dataset: {e}")
-                logger.info("Falling back to synthetic audio data")
-
-                # Generate synthetic audio data as fallback
-                n_samples = 100
-                audio_data = np.random.randn(n_samples, 16000 * 5)
-
-                # Create labels (binary classification: depressed/non-depressed)
-                binary_labels = np.random.randint(0, 2, size=(n_samples, 1))
-                phq8_scores = np.zeros((n_samples, 1))
-
-                # Assign PHQ-8 scores based on binary label
-                for i in range(n_samples):
-                    if binary_labels[i, 0] == 0:  # Non-depressed
-                        phq8_scores[i, 0] = np.random.randint(0, 10)  # PHQ-8 < 10: non-depressed
-                    else:  # Depressed
-                        phq8_scores[i, 0] = np.random.randint(10, 25)  # PHQ-8 >= 10: depressed
-
-                # Combine binary labels and PHQ-8 scores
-                emotion_labels = np.hstack((binary_labels, phq8_scores))
-
-                logger.info(f"Generated synthetic audio data with shape {audio_data.shape} and labels with shape {emotion_labels.shape}")
-
-                return audio_data, emotion_labels
+                raise ValueError("Could not load any audio dataset. Please check your internet connection or install the required packages properly.")
 
     def load_text_data(self):
         """
@@ -465,71 +416,7 @@ class DatasetLoader:
 
                 except Exception as e:
                     logger.error(f"Error loading tweet_eval dataset: {e}")
-                    logger.info("Falling back to synthetic text data")
-
-                    # Generate synthetic text data as fallback
-                    n_samples = 100
-
-                    # Create synthetic text data
-                    depressed_texts = [
-                        "I've been feeling really down lately. It's hard to get out of bed in the morning.",
-                        "Nothing seems to bring me joy anymore. I feel empty inside.",
-                        "I can't concentrate on anything. My mind is always foggy.",
-                        "I'm so tired all the time, but I can't sleep at night.",
-                        "I don't see any point in trying anymore. Nothing will change.",
-                        "I feel like a burden to everyone around me.",
-                        "I've lost interest in all the activities I used to enjoy.",
-                        "I keep thinking about all my failures and mistakes.",
-                        "I feel worthless and hopeless about the future.",
-                        "Sometimes I wonder if people would be better off without me."
-                    ]
-
-                    non_depressed_texts = [
-                        "I had a great day today. Everything went according to plan.",
-                        "I'm looking forward to the weekend. I have some fun activities planned.",
-                        "I'm making good progress on my projects at work.",
-                        "I enjoyed spending time with my friends yesterday.",
-                        "The weather is beautiful today. I might go for a walk later.",
-                        "I'm excited about the upcoming vacation I've planned.",
-                        "I learned something new today and it was really interesting.",
-                        "I'm grateful for all the support I receive from my family.",
-                        "I'm feeling motivated to tackle some challenges this week.",
-                        "I had a good laugh watching that comedy show last night."
-                    ]
-
-                    text_data = []
-                    binary_labels = []
-
-                    for i in range(n_samples):
-                        if i % 2 == 0:  # Even indices: non-depressed
-                            text = np.random.choice(non_depressed_texts)
-                            binary_label = 0
-                        else:  # Odd indices: depressed
-                            text = np.random.choice(depressed_texts)
-                            binary_label = 1
-
-                        text_data.append(text)
-                        binary_labels.append(binary_label)
-
-                    # Convert to numpy array
-                    binary_labels = np.array(binary_labels).reshape(-1, 1)
-
-                    # Create PHQ-8 scores
-                    phq8_scores = np.zeros((n_samples, 1))
-
-                    # Assign PHQ-8 scores based on binary label
-                    for i in range(n_samples):
-                        if binary_labels[i, 0] == 0:  # Non-depressed
-                            phq8_scores[i, 0] = np.random.randint(0, 10)  # PHQ-8 < 10: non-depressed
-                        else:  # Depressed
-                            phq8_scores[i, 0] = np.random.randint(10, 25)  # PHQ-8 >= 10: depressed
-
-                    # Combine binary labels and PHQ-8 scores
-                    emotion_labels = np.hstack((binary_labels, phq8_scores))
-
-                    logger.info(f"Generated synthetic text data with {len(text_data)} samples and labels with shape {emotion_labels.shape}")
-
-                    return text_data, emotion_labels
+                    raise ValueError("Could not load any text dataset. Please check your internet connection or install the required packages properly.")
 
     def create_dataset_splits(self, features, labels, test_size=0.2, val_size=0.1, random_state=42):
         """
