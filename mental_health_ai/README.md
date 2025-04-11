@@ -59,20 +59,49 @@ pip install -r requirements.txt
 
 ## Usage
 
+### Running the Pipeline
+
+You can run the entire pipeline with a single command:
+
+```bash
+python run_pipeline.py
+```
+
+This will:
+1. Preprocess all data (EEG, audio, text)
+2. Train all models
+3. Run the chatbot interface
+
+You can also run specific steps of the pipeline:
+
+```bash
+python run_pipeline.py --step preprocess  # Only preprocess data
+python run_pipeline.py --step train       # Only train models
+python run_pipeline.py --step chatbot     # Only run chatbot
+```
+
+Or focus on specific modalities:
+
+```bash
+python run_pipeline.py --modality eeg    # Only process EEG data
+python run_pipeline.py --modality audio   # Only process audio data
+python run_pipeline.py --modality text    # Only process text data
+```
+
 ### Data Preparation
 
 The system automatically downloads and processes data from public datasets:
 
-1. Run the dataset loader to download and process all datasets:
-   ```
-   python -m data.dataset_loader
-   ```
+```bash
+python preprocess_all_data.py
+```
 
-2. Alternatively, run the preprocessing scripts individually:
-   ```
-   python -m data.eeg.preprocess_eeg
-   python -m data.audio.preprocess_audio
-   python -m data.text.preprocess_text
+This will download and preprocess all datasets. You can also preprocess specific modalities:
+
+```bash
+python preprocess_eeg_data.py    # Only preprocess EEG data
+python preprocess_audio_data.py   # Only preprocess audio data
+python preprocess_text_data.py    # Only preprocess text data
    ```
 
 ### Training Models
@@ -111,6 +140,12 @@ streamlit run streamlit_app.py
 
 ```bash
 streamlit run simple_chatbot.py
+```
+
+4. **Trained Chatbot**: This is a chatbot interface that uses trained models for more accurate predictions.
+
+```bash
+streamlit run trained_chatbot.py
 ```
 
 ## Results
