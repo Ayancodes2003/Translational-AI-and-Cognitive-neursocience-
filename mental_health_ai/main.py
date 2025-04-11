@@ -103,9 +103,9 @@ def preprocess_data(args):
     # Create dataset loader
     loader = DatasetLoader(output_dir=args.output_dir)
 
-    # Load and process all datasets
-    logger.info("Loading and processing all datasets")
-    eeg_dataset, audio_dataset, text_dataset, fusion_dataset = loader.load_and_process_all_data()
+    # Load and process datasets for the specified modality
+    logger.info(f"Loading and processing {args.modality} datasets")
+    eeg_dataset, audio_dataset, text_dataset, fusion_dataset = loader.load_and_process_all_data(modality=args.modality)
 
     logger.info("Preprocessing stage completed")
 
@@ -143,6 +143,7 @@ def train_models(args):
         'train.py',
         f'--modality={args.modality}',
         f'--model={args.model_type}',
+        f'--data_path=data',
         f'--batch_size={args.batch_size}',
         f'--num_epochs={args.num_epochs}',
         f'--lr={args.learning_rate}',

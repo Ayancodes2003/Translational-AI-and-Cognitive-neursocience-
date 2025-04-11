@@ -1,0 +1,45 @@
+data:
+  audio_path: data/audio/processed
+  eeg_path: data/eeg/processed
+  fusion_path: data/fusion/processed
+  text_path: data/text/processed
+evaluation:
+  batch_size: 32
+  clinical_report: true
+  detailed: true
+  output_dir: results
+  risk_levels: true
+model:
+  audio:
+    dropout_rate: 0.5
+    hidden_dims:
+    - 128
+    - 64
+    type: cnn
+  eeg:
+    dropout_rate: 0.5
+    hidden_dims:
+    - 128
+    - 64
+    type: cnn
+  fusion:
+    dropout_rate: 0.5
+    hidden_dims:
+    - 256
+    - 128
+    - 64
+    type: early
+  text:
+    dropout_rate: 0.5
+    hidden_dims:
+    - 128
+    - 64
+    type: cnn
+training:
+  batch_size: 32
+  early_stopping: true
+  learning_rate: 0.001
+  model_save_path: models/saved
+  num_epochs: 50
+  patience: 10
+  weight_decay: 0.0001

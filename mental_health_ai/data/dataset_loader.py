@@ -582,65 +582,108 @@ class DatasetLoader:
 
         return fusion_dataset
 
-    def load_and_process_all_data(self):
+    def load_and_process_all_data(self, modality='all'):
         """
-        Load and process all datasets.
+        Load and process datasets based on the specified modality.
+
+        Args:
+            modality (str): The modality to process ('all', 'eeg', 'audio', 'text', or 'fusion')
 
         Returns:
             tuple: (eeg_dataset, audio_dataset, text_dataset, fusion_dataset)
         """
-        logger.info("Loading and processing all datasets")
+        logger.info(f"Loading and processing {modality} datasets")
 
-        # Load EEG data
-        eeg_data, eeg_labels = self.load_eeg_data()
+        eeg_dataset = None
+        audio_dataset = None
+        text_dataset = None
+        early_fusion_dataset = None
 
-        # Extract EEG features
-        from data.eeg.preprocess_eeg import EEGProcessor
-        eeg_processor = EEGProcessor(None, os.path.join(self.output_dir, 'eeg', 'processed'))
-        eeg_features = eeg_processor.extract_features(eeg_data)
+        # Process EEG data if needed
+        if modality == 'all' or modality == 'eeg' or modality == 'fusion':
+            try:
+                # Load EEG data
+                eeg_data, eeg_labels = self.load_eeg_data()
 
-        # Create EEG dataset splits
-        eeg_dataset = self.create_dataset_splits(eeg_features, eeg_labels)
-        self.save_dataset(eeg_dataset, 'eeg')
+                # Extract EEG features
+                from data.eeg.preprocess_eeg import EEGProcessor
+                eeg_processor = EEGProcessor(None, os.path.join(self.output_dir, 'eeg', 'processed'))
+                eeg_features = eeg_processor.extract_features(eeg_data)
 
-        # Load audio data
-        audio_data, audio_labels = self.load_audio_data()
+                # Create EEG dataset splits
+                eeg_dataset = self.create_dataset_splits(eeg_features, eeg_labels)
+                self.save_dataset(eeg_dataset, 'eeg')
+                logger.info("Successfully processed EEG data")
+            except Exception as e:
+                logger.error(f"Error processing EEG data: {e}")
+                if modality == 'eeg':
+                    raise
 
-        # Extract audio features
-        from data.audio.preprocess_audio import AudioProcessor
-        audio_processor = AudioProcessor(None, os.path.join(self.output_dir, 'audio', 'processed'))
-        audio_features = np.array([audio_processor.extract_features(audio) for audio in audio_data])
+        # Process audio data if needed
+        if modality == 'all' or modality == 'audio' or modality == 'fusion':
+            try:
+                # Load audio data
+                audio_data, audio_labels = self.load_audio_data()
 
-        # Create audio dataset splits
-        audio_dataset = self.create_dataset_splits(audio_features, audio_labels)
-        self.save_dataset(audio_dataset, 'audio')
+                # Extract audio features
+                from data.audio.preprocess_audio import AudioProcessor
+                audio_processor = AudioProcessor(None, os.path.join(self.output_dir, 'audio', 'processed'))
+                audio_features = np.array([audio_processor.extract_features(audio) for audio in audio_data])
 
-        # Load text data
-        text_data, text_labels = self.load_text_data()
+                # Create audio dataset splits
+                audio_dataset = self.create_dataset_splits(audio_features, audio_labels)
+                self.save_dataset(audio_dataset, 'audio')
+                logger.info("Successfully processed audio data")
+            except Exception as e:
+                logger.error(f"Error processing audio data: {e}")
+                if modality == 'audio':
+                    raise
 
-        # Extract text features
-        from data.text.preprocess_text import TextProcessor
-        text_processor = TextProcessor(None, os.path.join(self.output_dir, 'text', 'processed'))
+        # Process text data if needed
+        if modality == 'all' or modality == 'text' or modality == 'fusion':
+            try:
+                # Load text data
+                text_data, text_labels = self.load_text_data()
 
-        # Use TF-IDF for text features
-        from sklearn.feature_extraction.text import TfidfVectorizer
-        vectorizer = TfidfVectorizer(max_features=100, stop_words='english')
-        text_features = vectorizer.fit_transform(text_data).toarray()
+                # Extract text features
+                from data.text.preprocess_text import TextProcessor
+                text_processor = TextProcessor(None, os.path.join(self.output_dir, 'text', 'processed'))
 
-        # Add some linguistic features
-        linguistic_features = np.array([list(text_processor.extract_linguistic_features([text]).values()) for text in text_data])
-        text_features = np.hstack([text_features, linguistic_features])
+                # Use TF-IDF for text features
+                from sklearn.feature_extraction.text import TfidfVectorizer
+                vectorizer = TfidfVectorizer(max_features=100, stop_words='english')
+                text_features = vectorizer.fit_transform(text_data).toarray()
 
-        # Create text dataset splits
-        text_dataset = self.create_dataset_splits(text_features, text_labels)
-        self.save_dataset(text_dataset, 'text')
+                # Add some linguistic features
+                linguistic_features = np.array([list(text_processor.extract_linguistic_features([text]).values()) for text in text_data])
+                text_features = np.hstack([text_features, linguistic_features])
 
-        # Create fusion datasets
-        early_fusion_dataset = self.create_fusion_dataset(eeg_dataset, audio_dataset, text_dataset, 'early')
-        late_fusion_dataset = self.create_fusion_dataset(eeg_dataset, audio_dataset, text_dataset, 'late')
-        intermediate_fusion_dataset = self.create_fusion_dataset(eeg_dataset, audio_dataset, text_dataset, 'intermediate')
+                # Create text dataset splits
+                text_dataset = self.create_dataset_splits(text_features, text_labels)
+                self.save_dataset(text_dataset, 'text')
+                logger.info("Successfully processed text data")
+            except Exception as e:
+                logger.error(f"Error processing text data: {e}")
+                if modality == 'text':
+                    raise
 
-        logger.info("Finished loading and processing all datasets")
+        # Process fusion data if needed
+        if modality == 'all' or modality == 'fusion':
+            try:
+                if eeg_dataset is not None and audio_dataset is not None and text_dataset is not None:
+                    # Create fusion datasets
+                    early_fusion_dataset = self.create_fusion_dataset(eeg_dataset, audio_dataset, text_dataset, 'early')
+                    late_fusion_dataset = self.create_fusion_dataset(eeg_dataset, audio_dataset, text_dataset, 'late')
+                    intermediate_fusion_dataset = self.create_fusion_dataset(eeg_dataset, audio_dataset, text_dataset, 'intermediate')
+                    logger.info("Successfully processed fusion data")
+                elif modality == 'fusion':
+                    raise ValueError("Cannot create fusion dataset because one or more modalities failed to load")
+            except Exception as e:
+                logger.error(f"Error processing fusion data: {e}")
+                if modality == 'fusion':
+                    raise
+
+        logger.info(f"Finished processing {modality} datasets")
 
         return eeg_dataset, audio_dataset, text_dataset, early_fusion_dataset
 
