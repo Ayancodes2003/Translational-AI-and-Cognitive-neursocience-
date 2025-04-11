@@ -9,7 +9,7 @@ import os
 import numpy as np
 import pandas as pd
 import mne
-from mne import sample
+from mne.datasets import sample
 from mne.datasets import eegbci
 from mne.io import read_raw_edf
 from scipy import signal
@@ -52,7 +52,7 @@ class EEGProcessor:
         self.output_path = output_path or os.path.join('data', 'eeg', 'processed')
         os.makedirs(self.data_path, exist_ok=True)
         os.makedirs(self.output_path, exist_ok=True)
-        
+
         # Set MNE logging level
         mne.set_log_level('WARNING')
 
@@ -68,24 +68,24 @@ class EEGProcessor:
 
         # Download MNE sample data if needed
         data_path = sample.data_path()
-        
+
         # Load raw data
         raw_fname = os.path.join(data_path, 'MEG', 'sample', 'sample_audvis_raw.fif')
         raw = mne.io.read_raw_fif(raw_fname, preload=True)
-        
+
         # Extract events
         events = mne.find_events(raw, stim_channel='STI 014')
-        
+
         # Define event IDs
         event_id = {'auditory/left': 1, 'auditory/right': 2, 'visual/left': 3, 'visual/right': 4}
-        
+
         # Extract epochs
-        epochs = mne.Epochs(raw, events, event_id, tmin=-0.2, tmax=0.5, proj=True, 
+        epochs = mne.Epochs(raw, events, event_id, tmin=-0.2, tmax=0.5, proj=True,
                           picks='eeg', baseline=(None, 0), preload=True)
-        
+
         # Get data and labels
         X = epochs.get_data()  # shape: (n_epochs, n_channels, n_times)
-        
+
         # Create binary labels (0: auditory, 1: visual)
         y = np.zeros((len(epochs), 2))
         for i, event in enumerate(epochs.events[:, 2]):
@@ -93,17 +93,17 @@ class EEGProcessor:
                 y[i, 0] = 0
             else:  # visual
                 y[i, 0] = 1
-            
+
             # Add a synthetic PHQ-8 score (for demonstration)
             if y[i, 0] == 0:  # auditory (non-depressed)
                 y[i, 1] = np.random.randint(0, 10)  # PHQ-8 < 10: non-depressed
             else:  # visual (depressed)
                 y[i, 1] = np.random.randint(10, 25)  # PHQ-8 >= 10: depressed
-        
+
         logger.info(f"Loaded MNE sample data with shape {X.shape} and labels with shape {y.shape}")
-        
+
         return X, y
-    
+
     def load_eegbci_data(self, subjects=range(1, 5), runs=[6, 10, 14], force_download=False):
         """
         Load EEG data from EEG Motor Movement/Imagery Dataset.
@@ -118,45 +118,45 @@ class EEGProcessor:
                   and labels is a numpy array of shape (n_epochs, 2)
         """
         logger.info("Loading data from EEG Motor Movement/Imagery Dataset")
-        
+
         all_epochs = []
         all_labels = []
-        
+
         for subject in subjects:
             # Download data if needed
             eegbci.load_data(subject, runs, path=self.data_path, force_update=force_download)
-            
+
             # Get file paths for the runs
             fnames = [eegbci.load_data(subject, run, path=self.data_path)[0] for run in runs]
-            
+
             # Load and concatenate the runs
             raw_list = []
             for fname in fnames:
                 raw = read_raw_edf(fname, preload=True)
                 raw_list.append(raw)
-            
+
             raw = mne.concatenate_raws(raw_list)
-            
+
             # Set montage
             eegbci.standardize(raw)
             montage = mne.channels.make_standard_montage('standard_1005')
             raw.set_montage(montage)
-            
+
             # Extract events
             events, _ = mne.events_from_annotations(raw)
-            
+
             # Define event IDs
             # Event IDs: T0=rest, T1=left hand, T2=right hand
             event_id = {'T0': 0, 'T1': 1, 'T2': 2}
-            
+
             # Extract epochs
             tmin, tmax = 0, 4  # 4 seconds of data
-            epochs = mne.Epochs(raw, events, event_id, tmin, tmax, proj=True, 
+            epochs = mne.Epochs(raw, events, event_id, tmin, tmax, proj=True,
                               picks='eeg', baseline=None, preload=True)
-            
+
             # Get data
             X = epochs.get_data()
-            
+
             # Create binary labels (0: rest, 1: movement)
             y = np.zeros((len(epochs), 2))
             for i, event in enumerate(epochs.events[:, 2]):
@@ -164,24 +164,24 @@ class EEGProcessor:
                     y[i, 0] = 0
                 else:  # movement
                     y[i, 0] = 1
-                
+
                 # Add a synthetic PHQ-8 score (for demonstration)
                 if y[i, 0] == 0:  # rest (non-depressed)
                     y[i, 1] = np.random.randint(0, 10)  # PHQ-8 < 10: non-depressed
                 else:  # movement (depressed)
                     y[i, 1] = np.random.randint(10, 25)  # PHQ-8 >= 10: depressed
-            
+
             all_epochs.append(X)
             all_labels.append(y)
-        
+
         # Concatenate data from all subjects
         X = np.vstack(all_epochs)
         y = np.vstack(all_labels)
-        
+
         logger.info(f"Loaded EEG Motor Movement/Imagery data with shape {X.shape} and labels with shape {y.shape}")
-        
+
         return X, y
-    
+
     def load_data(self, dataset='mne_sample'):
         """
         Load EEG data from the specified dataset.
@@ -339,7 +339,7 @@ class EEGProcessor:
         except Exception as e:
             logger.error(f"Error processing {dataset} dataset: {e}")
             raise
-    
+
     def process_all_datasets(self):
         """
         Process all available datasets.
@@ -369,13 +369,13 @@ class EEGProcessor:
         if 'mne_sample' in results and 'eegbci' in results:
             combined_features = np.vstack([results['mne_sample']['features'], results['eegbci']['features']])
             combined_labels = np.vstack([results['mne_sample']['labels'], results['eegbci']['labels']])
-            
+
             results['combined'] = {'features': combined_features, 'labels': combined_labels}
-            
+
             # Save combined data
             np.save(os.path.join(self.output_path, 'combined_features.npy'), combined_features)
             np.save(os.path.join(self.output_path, 'combined_labels.npy'), combined_labels)
-            
+
             logger.info("Combined datasets successfully")
 
         logger.info("Finished processing all datasets")
@@ -458,17 +458,17 @@ if __name__ == "__main__":
 
     # Process data
     processor = EEGProcessor(args.data_path, args.output_path)
-    
+
     if args.dataset == 'combined':
         # Process all datasets
         results = processor.process_all_datasets()
-        
+
         # Create dataset splits for combined dataset
         if 'combined' in results:
             processor.create_dataset_splits('combined')
     else:
         # Process specific dataset
         processor.process_dataset(args.dataset)
-        
+
         # Create dataset splits
         processor.create_dataset_splits(args.dataset)

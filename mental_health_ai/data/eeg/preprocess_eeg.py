@@ -9,7 +9,7 @@ import os
 import numpy as np
 import pandas as pd
 import mne
-from mne import sample
+from mne.datasets import sample
 from mne.datasets import eegbci
 from mne.io import read_raw_edf
 from scipy import signal

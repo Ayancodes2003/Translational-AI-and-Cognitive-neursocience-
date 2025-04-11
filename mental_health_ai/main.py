@@ -1,7 +1,4 @@
-"""
-Main Script
-
-This script runs the entire pipeline for the Mental Health AI project.
+"""pipeline for the Mental Health AI project.
 """
 
 import os
@@ -81,7 +78,7 @@ def parse_args():
                         help='Learning rate for training')
 
     # Evaluation parameters
-    parser.add_argument('--output_dir', type=str, default='results',
+    parser.add_argument('--results_dir', type=str, default='results',
                         help='Directory to save evaluation results')
 
     # Clinical insights parameters
