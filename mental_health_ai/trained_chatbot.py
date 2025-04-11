@@ -6,18 +6,10 @@ This script runs the Mental Health AI chatbot with trained models.
 
 import os
 import sys
-import numpy as np
-import pandas as pd
-import torch
-import streamlit as st
-import matplotlib.pyplot as plt
-import seaborn as sns
-import json
-import tempfile
+import random
 from datetime import datetime
+import streamlit as st
 import nltk
-from nltk.tokenize import word_tokenize
-import re
 
 # Download NLTK resources
 try:
@@ -27,10 +19,6 @@ except LookupError:
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# from data.text.preprocess_text import TextProcessor
-from clinical_insights.risk_assessment import RiskAssessor
-from clinical_insights.report_generator import ClinicalReportGenerator
 
 # Set page configuration
 st.set_page_config(
@@ -81,11 +69,306 @@ class SimpleTextProcessor:
 # Initialize text processor
 text_processor = SimpleTextProcessor()
 
+# Define a simple risk assessor class
+class SimpleRiskAssessor:
+    def __init__(self):
+        pass
+
+    def assess_risk_from_text(self, text_features):
+        """
+        Assess risk level from text features.
+
+        Args:
+            text_features (dict): Text features
+
+        Returns:
+            dict: Risk assessment results
+        """
+        # Initialize risk score
+        risk_score = 0.0
+
+        # Factor 1: Depression keyword count
+        if 'depression_keyword_count' in text_features and 'token_count' in text_features:
+            if text_features['token_count'] > 0:
+                keyword_ratio = text_features['depression_keyword_count'] / text_features['token_count']
+                risk_score += keyword_ratio * 0.4  # 40% weight
+
+        # Factor 2: Negative word count
+        if 'negative_word_count' in text_features and 'token_count' in text_features:
+            if text_features['token_count'] > 0:
+                negative_ratio = text_features['negative_word_count'] / text_features['token_count']
+                risk_score += negative_ratio * 0.3  # 30% weight
+
+        # Factor 3: First-person pronoun usage
+        if 'first_person_pronoun_count' in text_features and 'token_count' in text_features:
+            if text_features['token_count'] > 0:
+                pronoun_ratio = text_features['first_person_pronoun_count'] / text_features['token_count']
+                risk_score += pronoun_ratio * 0.2  # 20% weight
+
+        # Factor 4: Lexical diversity (lower diversity can indicate depression)
+        if 'lexical_diversity' in text_features:
+            lexical_diversity = text_features['lexical_diversity']
+            if lexical_diversity < 0.3:  # Low lexical diversity
+                risk_score += 0.1  # 10% weight
+
+        # Normalize risk score to 0-1 range
+        risk_score = min(max(risk_score, 0.0), 1.0)
+
+        # Determine risk level
+        if risk_score < 0.3:
+            risk_level = "Low"
+        elif risk_score < 0.7:
+            risk_level = "Moderate"
+        else:
+            risk_level = "High"
+
+        # Create risk assessment results
+        results = {
+            'risk_score': risk_score,
+            'risk_level': risk_level,
+            'modality': 'text'
+        }
+
+        return results
+
+    def assess_risk_from_phq9(self, phq9_scores):
+        """
+        Assess risk level from PHQ-9 scores.
+
+        Args:
+            phq9_scores (list): PHQ-9 scores
+
+        Returns:
+            dict: Risk assessment results
+        """
+        # Calculate total score
+        total_score = sum(phq9_scores)
+
+        # Determine depression severity
+        if total_score <= 4:
+            severity = "Minimal or none"
+            risk_level = "Low"
+            risk_score = total_score / 27  # Normalize to 0-1 range
+        elif total_score <= 9:
+            severity = "Mild"
+            risk_level = "Low"
+            risk_score = total_score / 27
+        elif total_score <= 14:
+            severity = "Moderate"
+            risk_level = "Moderate"
+            risk_score = total_score / 27
+        elif total_score <= 19:
+            severity = "Moderately severe"
+            risk_level = "High"
+            risk_score = total_score / 27
+        else:
+            severity = "Severe"
+            risk_level = "High"
+            risk_score = total_score / 27
+
+        # Check for suicidal ideation (question 9)
+        suicide_risk = phq9_scores[8] > 0
+
+        # Create risk assessment results
+        results = {
+            'risk_score': risk_score,
+            'risk_level': risk_level,
+            'severity': severity,
+            'total_score': total_score,
+            'suicide_risk': suicide_risk,
+            'modality': 'phq9'
+        }
+
+        return results
+
 # Initialize risk assessor
-risk_assessor = RiskAssessor()
+risk_assessor = SimpleRiskAssessor()
+
+# Define a simple clinical report generator class
+class SimpleClinicalReportGenerator:
+    def __init__(self):
+        # Initialize suggestions
+        self.low_risk_suggestions = [
+            "Continue regular self-monitoring of your mood and energy levels.",
+            "Maintain a healthy lifestyle with regular exercise, balanced diet, and adequate sleep.",
+            "Practice stress management techniques like deep breathing, meditation, or yoga.",
+            "Stay connected with friends and family for social support.",
+            "Engage in activities you enjoy and that give you a sense of accomplishment.",
+            "Consider keeping a gratitude journal to focus on positive aspects of your life.",
+            "Limit exposure to negative news and social media if it affects your mood.",
+            "Spend time in nature, which has been shown to improve mood and reduce stress.",
+            "Set realistic goals and celebrate small achievements.",
+            "Maintain a regular daily routine to provide structure and stability."
+        ]
+
+        self.moderate_risk_suggestions = [
+            "Consider consulting a mental health professional for an evaluation.",
+            "Increase self-care activities and prioritize your wellbeing.",
+            "Monitor mood changes more closely and keep a mood journal.",
+            "Practice mindfulness and relaxation techniques regularly.",
+            "Reach out to trusted friends or family members for support.",
+            "Join a support group to connect with others experiencing similar challenges.",
+            "Establish a regular sleep schedule and practice good sleep hygiene.",
+            "Engage in regular physical activity, even if it's just a short walk.",
+            "Limit alcohol and avoid recreational drugs, which can worsen depression.",
+            "Break large tasks into smaller, manageable steps to avoid feeling overwhelmed.",
+            "Challenge negative thoughts by questioning their validity and considering alternative perspectives.",
+            "Consider using mental health apps or online resources for additional support."
+        ]
+
+        self.high_risk_suggestions = [
+            "Please seek professional help as soon as possible. This could include a therapist, counselor, or psychiatrist.",
+            "If you're having thoughts of harming yourself, call a crisis hotline immediately: National Suicide Prevention Lifeline at 988 or 1-800-273-8255.",
+            "Consider therapy or counseling to develop coping strategies and address underlying issues.",
+            "Discuss medication options with a healthcare provider if appropriate.",
+            "Establish a strong support network of trusted individuals who can help during difficult times.",
+            "Create a safety plan with specific steps to take when experiencing suicidal thoughts.",
+            "Remove access to means of self-harm if you're experiencing suicidal thoughts.",
+            "Attend to basic needs like eating regularly, staying hydrated, and getting rest.",
+            "Use grounding techniques when feeling overwhelmed (e.g., the 5-4-3-2-1 technique).",
+            "Avoid making major life decisions during this difficult time.",
+            "Remember that depression is treatable, and many people recover with proper support.",
+            "Be gentle with yourself and acknowledge that seeking help is a sign of strength, not weakness."
+        ]
+
+        # Initialize observations
+        self.low_risk_observations = [
+            "Your responses suggest minimal to mild depression symptoms.",
+            "You appear to be managing your mental health effectively.",
+            "Your linguistic patterns do not show significant indicators of depression.",
+            "Your overall risk assessment indicates low risk for depression. Continued monitoring is recommended."
+        ]
+
+        self.moderate_risk_observations = [
+            "Your responses suggest moderate depression symptoms.",
+            "There are some indicators of potential distress in your communication patterns.",
+            "Your linguistic patterns show some indicators associated with depression.",
+            "Your overall risk assessment indicates moderate risk for depression. Regular monitoring is recommended."
+        ]
+
+        self.high_risk_observations = [
+            "Your responses suggest moderately severe to severe depression symptoms.",
+            "There are significant indicators of distress in your communication patterns.",
+            "Your linguistic patterns show strong indicators associated with depression.",
+            "Your overall risk assessment indicates high risk for depression. Professional intervention is recommended."
+        ]
+
+    def generate_observations(self, risk_level, modality_contributions=None, suicide_risk=False):
+        """
+        Generate observations based on risk level and modality contributions.
+
+        Args:
+            risk_level (str): Risk level ('Low', 'Moderate', or 'High')
+            modality_contributions (dict): Modality contributions
+            suicide_risk (bool): Whether suicide risk is detected
+
+        Returns:
+            list: Observations
+        """
+        # Select observations based on risk level
+        if risk_level == "Low":
+            observations = self.low_risk_observations.copy()
+        elif risk_level == "Moderate":
+            observations = self.moderate_risk_observations.copy()
+        else:  # High
+            observations = self.high_risk_observations.copy()
+
+        # Add suicide risk observation if applicable
+        if suicide_risk:
+            observations.append("⚠️ Your responses indicate thoughts of self-harm or suicide. Please seek immediate help from a mental health professional or call the National Suicide Prevention Lifeline at 988 or 1-800-273-8255.")
+
+        return observations
+
+    def generate_suggestions(self, risk_level, num_suggestions=3):
+        """
+        Generate suggestions based on risk level.
+
+        Args:
+            risk_level (str): Risk level ('Low', 'Moderate', or 'High')
+            num_suggestions (int): Number of suggestions to generate
+
+        Returns:
+            list: Suggestions
+        """
+        import random
+
+        # Select suggestions based on risk level
+        if risk_level == "Low":
+            suggestions = self.low_risk_suggestions
+        elif risk_level == "Moderate":
+            suggestions = self.moderate_risk_suggestions
+        else:  # High
+            suggestions = self.high_risk_suggestions
+
+        # Randomly select suggestions
+        selected_suggestions = random.sample(suggestions, min(num_suggestions, len(suggestions)))
+
+        # Always include suicide hotline for high risk
+        if risk_level == "High" and "If you're having thoughts of harming yourself, call a crisis hotline immediately: National Suicide Prevention Lifeline at 988 or 1-800-273-8255." not in selected_suggestions:
+            selected_suggestions.insert(0, "If you're having thoughts of harming yourself, call a crisis hotline immediately: National Suicide Prevention Lifeline at 988 or 1-800-273-8255.")
+
+        return selected_suggestions
+
+    def generate_report(self, risk_assessment, text_features=None, audio_features=None, phq9_scores=None, sample_id=None):
+        """
+        Generate clinical report.
+
+        Args:
+            risk_assessment (dict): Risk assessment results
+            text_features (dict): Text features
+            audio_features (dict): Audio features
+            phq9_scores (list): PHQ-9 scores
+            sample_id (int): Sample ID
+
+        Returns:
+            dict: Clinical report
+        """
+        # Extract risk level and score
+        risk_level = risk_assessment['risk_level']
+        risk_score = risk_assessment['risk_score']
+
+        # Extract modality contributions
+        modality_contributions = risk_assessment.get('modality_contributions', {})
+
+        # Extract suicide risk
+        suicide_risk = False
+        if 'suicide_risk' in risk_assessment:
+            suicide_risk = risk_assessment['suicide_risk']
+        elif phq9_scores is not None:
+            suicide_risk = phq9_scores[8] > 0
+
+        # Generate observations
+        observations = self.generate_observations(risk_level, modality_contributions, suicide_risk)
+
+        # Generate suggestions
+        suggestions = self.generate_suggestions(risk_level)
+
+        # Create report
+        from datetime import datetime
+
+        report = {
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'sample_id': sample_id,
+            'depression_probability': risk_score,
+            'risk_level': risk_level,
+            'observations': observations,
+            'suggestions': suggestions
+        }
+
+        # Add modality contributions if available
+        if modality_contributions:
+            report['modality_contributions'] = modality_contributions
+
+        # Add PHQ-9 results if available
+        if phq9_scores is not None:
+            report['phq9_total_score'] = sum(phq9_scores)
+            report['phq9_scores'] = phq9_scores
+            report['suicide_risk'] = suicide_risk
+
+        return report
 
 # Initialize clinical report generator
-report_generator = ClinicalReportGenerator()
+report_generator = SimpleClinicalReportGenerator()
 
 # Define PHQ-9 questions
 phq9_questions = [
@@ -119,8 +402,8 @@ def analyze_text(text):
     Returns:
         dict: Analysis results
     """
-    # Clean text
-    cleaned_text = text_processor.clean_text(text)
+    # Clean text (not used but kept for clarity)
+    text_processor.clean_text(text)
 
     # Extract linguistic features
     features = text_processor.extract_linguistic_features([text])
