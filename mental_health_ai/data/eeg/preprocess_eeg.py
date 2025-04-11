@@ -382,11 +382,12 @@ class EEGProcessor:
 
         return results
 
-    def create_dataset_splits(self, test_size=0.2, val_size=0.1, random_state=42):
+    def create_dataset_splits(self, dataset='combined', test_size=0.2, val_size=0.1, random_state=42):
         """
         Create train/val/test splits from the processed data.
 
         Args:
+            dataset (str): Dataset to use ('mne_sample', 'eegbci', or 'combined')
             test_size (float): Proportion of data to use for testing
             val_size (float): Proportion of data to use for validation
             random_state (int): Random seed for reproducibility
@@ -396,11 +397,15 @@ class EEGProcessor:
         """
         from sklearn.model_selection import train_test_split
 
-        logger.info("Creating dataset splits")
+        logger.info(f"Creating dataset splits for {dataset} dataset")
 
         # Load processed data
-        X = np.load(os.path.join(self.output_path, 'eeg_features.npy'))
-        y = np.load(os.path.join(self.output_path, 'eeg_labels.npy'))
+        try:
+            X = np.load(os.path.join(self.output_path, f'{dataset}_features.npy'))
+            y = np.load(os.path.join(self.output_path, f'{dataset}_labels.npy'))
+        except FileNotFoundError:
+            logger.error(f"Processed data for {dataset} not found. Processing dataset first.")
+            X, y = self.process_dataset(dataset)
 
         # Split into train+val and test
         X_train_val, X_test, y_train_val, y_test = train_test_split(
@@ -414,7 +419,7 @@ class EEGProcessor:
         )
 
         # Create dataset dictionary
-        dataset = {
+        dataset_dict = {
             'X_train': X_train,
             'y_train': y_train,
             'X_val': X_val,
@@ -424,12 +429,12 @@ class EEGProcessor:
         }
 
         # Save dataset splits
-        with open(os.path.join(self.output_path, 'eeg_dataset.pkl'), 'wb') as f:
-            pickle.dump(dataset, f)
+        with open(os.path.join(self.output_path, f'{dataset}_dataset.pkl'), 'wb') as f:
+            pickle.dump(dataset_dict, f)
 
-        logger.info("Finished creating dataset splits")
+        logger.info(f"Finished creating dataset splits for {dataset} dataset")
 
-        return dataset
+        return dataset_dict
 
 
 def download_deap_dataset(output_dir):
@@ -494,5 +499,5 @@ if __name__ == "__main__":
         else:
             # Process data
             processor = EEGProcessor(args.data_path, args.output_path)
-            processor.process_all_subjects()
+            processor.process_all_datasets()
             processor.create_dataset_splits()
