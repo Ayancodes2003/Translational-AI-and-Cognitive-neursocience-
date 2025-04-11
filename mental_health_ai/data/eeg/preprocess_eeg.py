@@ -1,7 +1,7 @@
 """
 EEG Data Preprocessing Module
 
-This module handles the preprocessing of EEG data from the DEAP dataset.
+This module handles the preprocessing of EEG data from the MNE Sample Dataset and EEG Motor Movement/Imagery Dataset.
 It includes functions for loading, filtering, normalization, and feature extraction.
 """
 
@@ -9,6 +9,9 @@ import os
 import numpy as np
 import pandas as pd
 import mne
+from mne import sample
+from mne.datasets import eegbci
+from mne.io import read_raw_edf
 from scipy import signal
 import pickle
 import antropy as ant
@@ -35,48 +38,166 @@ FREQ_BANDS = {
 }
 
 class EEGProcessor:
-    """Class for processing EEG data from the DEAP dataset."""
+    """Class for processing EEG data from MNE Sample Dataset and EEG Motor Movement/Imagery Dataset."""
 
-    def __init__(self, data_path, output_path=None):
+    def __init__(self, data_path=None, output_path=None):
         """
         Initialize the EEG processor.
 
         Args:
-            data_path (str): Path to the DEAP dataset
+            data_path (str, optional): Path to save downloaded data
             output_path (str, optional): Path to save processed data
         """
-        self.data_path = data_path
-        self.output_path = output_path or os.path.join(data_path, 'processed')
+        self.data_path = data_path or os.path.join('data', 'eeg', 'raw')
+        self.output_path = output_path or os.path.join('data', 'eeg', 'processed')
+        os.makedirs(self.data_path, exist_ok=True)
         os.makedirs(self.output_path, exist_ok=True)
 
-    def load_data(self, subject_id):
-        """
-        Load EEG data for a specific subject.
+        # Set MNE logging level
+        mne.set_log_level('WARNING')
 
-        Args:
-            subject_id (int): Subject ID (1-32)
+    def load_mne_sample_data(self):
+        """
+        Load EEG data from MNE sample dataset.
 
         Returns:
-            tuple: (data, labels) where data is a numpy array of shape (40, 40, 8064)
-                  and labels is a numpy array of shape (40, 4)
+            tuple: (data, labels) where data is a numpy array of shape (n_epochs, n_channels, n_times)
+                  and labels is a numpy array of shape (n_epochs, 2)
         """
-        logger.info(f"Loading data for subject {subject_id}")
+        logger.info("Loading data from MNE sample dataset")
 
-        # Format subject ID with leading zeros
-        subject_str = f"s{subject_id:02d}"
+        # Download MNE sample data if needed
+        data_path = sample.data_path()
 
-        # Path to the data file
-        data_file = os.path.join(self.data_path, f"{subject_str}.dat")
+        # Load raw data
+        raw_fname = os.path.join(data_path, 'MEG', 'sample', 'sample_audvis_raw.fif')
+        raw = mne.io.read_raw_fif(raw_fname, preload=True)
 
-        # Check if file exists
-        if not os.path.exists(data_file):
-            raise FileNotFoundError(f"Data file not found: {data_file}")
+        # Extract events
+        events = mne.find_events(raw, stim_channel='STI 014')
 
-        # Load data
-        with open(data_file, 'rb') as f:
-            data = pickle.load(f, encoding='latin1')
+        # Define event IDs
+        event_id = {'auditory/left': 1, 'auditory/right': 2, 'visual/left': 3, 'visual/right': 4}
 
-        return data['data'], data['labels']
+        # Extract epochs
+        epochs = mne.Epochs(raw, events, event_id, tmin=-0.2, tmax=0.5, proj=True,
+                          picks='eeg', baseline=(None, 0), preload=True)
+
+        # Get data and labels
+        X = epochs.get_data()  # shape: (n_epochs, n_channels, n_times)
+
+        # Create binary labels (0: auditory, 1: visual)
+        y = np.zeros((len(epochs), 2))
+        for i, event in enumerate(epochs.events[:, 2]):
+            if event in [1, 2]:  # auditory
+                y[i, 0] = 0
+            else:  # visual
+                y[i, 0] = 1
+
+            # Add a synthetic PHQ-8 score (for demonstration)
+            if y[i, 0] == 0:  # auditory (non-depressed)
+                y[i, 1] = np.random.randint(0, 10)  # PHQ-8 < 10: non-depressed
+            else:  # visual (depressed)
+                y[i, 1] = np.random.randint(10, 25)  # PHQ-8 >= 10: depressed
+
+        logger.info(f"Loaded MNE sample data with shape {X.shape} and labels with shape {y.shape}")
+
+        return X, y
+
+    def load_eegbci_data(self, subjects=range(1, 5), runs=[6, 10, 14], force_download=False):
+        """
+        Load EEG data from EEG Motor Movement/Imagery Dataset.
+
+        Args:
+            subjects (list): List of subject IDs to load
+            runs (list): List of runs to load
+            force_download (bool): Whether to force download even if files exist
+
+        Returns:
+            tuple: (data, labels) where data is a numpy array of shape (n_epochs, n_channels, n_times)
+                  and labels is a numpy array of shape (n_epochs, 2)
+        """
+        logger.info("Loading data from EEG Motor Movement/Imagery Dataset")
+
+        all_epochs = []
+        all_labels = []
+
+        for subject in subjects:
+            # Download data if needed
+            eegbci.load_data(subject, runs, path=self.data_path, force_update=force_download)
+
+            # Get file paths for the runs
+            fnames = [eegbci.load_data(subject, run, path=self.data_path)[0] for run in runs]
+
+            # Load and concatenate the runs
+            raw_list = []
+            for fname in fnames:
+                raw = read_raw_edf(fname, preload=True)
+                raw_list.append(raw)
+
+            raw = mne.concatenate_raws(raw_list)
+
+            # Set montage
+            eegbci.standardize(raw)
+            montage = mne.channels.make_standard_montage('standard_1005')
+            raw.set_montage(montage)
+
+            # Extract events
+            events, _ = mne.events_from_annotations(raw)
+
+            # Define event IDs
+            # Event IDs: T0=rest, T1=left hand, T2=right hand
+            event_id = {'T0': 0, 'T1': 1, 'T2': 2}
+
+            # Extract epochs
+            tmin, tmax = 0, 4  # 4 seconds of data
+            epochs = mne.Epochs(raw, events, event_id, tmin, tmax, proj=True,
+                              picks='eeg', baseline=None, preload=True)
+
+            # Get data
+            X = epochs.get_data()
+
+            # Create binary labels (0: rest, 1: movement)
+            y = np.zeros((len(epochs), 2))
+            for i, event in enumerate(epochs.events[:, 2]):
+                if event == 0:  # rest
+                    y[i, 0] = 0
+                else:  # movement
+                    y[i, 0] = 1
+
+                # Add a synthetic PHQ-8 score (for demonstration)
+                if y[i, 0] == 0:  # rest (non-depressed)
+                    y[i, 1] = np.random.randint(0, 10)  # PHQ-8 < 10: non-depressed
+                else:  # movement (depressed)
+                    y[i, 1] = np.random.randint(10, 25)  # PHQ-8 >= 10: depressed
+
+            all_epochs.append(X)
+            all_labels.append(y)
+
+        # Concatenate data from all subjects
+        X = np.vstack(all_epochs)
+        y = np.vstack(all_labels)
+
+        logger.info(f"Loaded EEG Motor Movement/Imagery data with shape {X.shape} and labels with shape {y.shape}")
+
+        return X, y
+
+    def load_data(self, dataset='mne_sample'):
+        """
+        Load EEG data from the specified dataset.
+
+        Args:
+            dataset (str): Dataset to load ('mne_sample' or 'eegbci')
+
+        Returns:
+            tuple: (data, labels) where data is a numpy array and labels is a numpy array
+        """
+        if dataset == 'mne_sample':
+            return self.load_mne_sample_data()
+        elif dataset == 'eegbci':
+            return self.load_eegbci_data()
+        else:
+            raise ValueError(f"Unknown dataset: {dataset}")
 
     def preprocess_eeg(self, eeg_data):
         """
@@ -186,51 +307,80 @@ class EEGProcessor:
 
         return features
 
-    def process_all_subjects(self):
+    def process_dataset(self, dataset='mne_sample'):
         """
-        Process all subjects in the dataset.
+        Process the specified dataset.
+
+        Args:
+            dataset (str): Dataset to process ('mne_sample' or 'eegbci')
 
         Returns:
             tuple: (X, y) where X is the feature matrix and y is the label vector
         """
-        logger.info("Processing all subjects")
+        logger.info(f"Processing {dataset} dataset")
 
-        all_features = []
-        all_labels = []
+        try:
+            # Load data
+            eeg_data, labels = self.load_data(dataset)
 
-        for subject_id in range(1, 33):  # DEAP has 32 subjects
-            try:
-                # Load data
-                data, labels = self.load_data(subject_id)
+            # Preprocess EEG data
+            preprocessed_data = self.preprocess_eeg(eeg_data)
 
-                # Extract EEG data (first 32 channels)
-                eeg_data = data[:, :EEG_CHANNELS, :]
+            # Extract features
+            features = self.extract_features(preprocessed_data)
 
-                # Preprocess EEG data
-                preprocessed_data = self.preprocess_eeg(eeg_data)
+            # Save processed data
+            np.save(os.path.join(self.output_path, f'{dataset}_features.npy'), features)
+            np.save(os.path.join(self.output_path, f'{dataset}_labels.npy'), labels)
 
-                # Extract features
-                features = self.extract_features(preprocessed_data)
+            logger.info(f"Finished processing {dataset} dataset")
 
-                # Store features and labels
-                all_features.append(features)
-                all_labels.append(labels)
+            return features, labels
+        except Exception as e:
+            logger.error(f"Error processing {dataset} dataset: {e}")
+            raise
 
-                logger.info(f"Processed subject {subject_id}")
-            except Exception as e:
-                logger.error(f"Error processing subject {subject_id}: {e}")
+    def process_all_datasets(self):
+        """
+        Process all available datasets.
 
-        # Concatenate features and labels
-        X = np.vstack(all_features)
-        y = np.vstack(all_labels)
+        Returns:
+            dict: Dictionary containing features and labels for each dataset
+        """
+        logger.info("Processing all datasets")
 
-        # Save processed data
-        np.save(os.path.join(self.output_path, 'eeg_features.npy'), X)
-        np.save(os.path.join(self.output_path, 'eeg_labels.npy'), y)
+        results = {}
 
-        logger.info("Finished processing all subjects")
+        # Process MNE sample dataset
+        try:
+            features, labels = self.process_dataset('mne_sample')
+            results['mne_sample'] = {'features': features, 'labels': labels}
+        except Exception as e:
+            logger.error(f"Error processing MNE sample dataset: {e}")
 
-        return X, y
+        # Process EEG Motor Movement/Imagery dataset
+        try:
+            features, labels = self.process_dataset('eegbci')
+            results['eegbci'] = {'features': features, 'labels': labels}
+        except Exception as e:
+            logger.error(f"Error processing EEG Motor Movement/Imagery dataset: {e}")
+
+        # Combine datasets if both are available
+        if 'mne_sample' in results and 'eegbci' in results:
+            combined_features = np.vstack([results['mne_sample']['features'], results['eegbci']['features']])
+            combined_labels = np.vstack([results['mne_sample']['labels'], results['eegbci']['labels']])
+
+            results['combined'] = {'features': combined_features, 'labels': combined_labels}
+
+            # Save combined data
+            np.save(os.path.join(self.output_path, 'combined_features.npy'), combined_features)
+            np.save(os.path.join(self.output_path, 'combined_labels.npy'), combined_labels)
+
+            logger.info("Combined datasets successfully")
+
+        logger.info("Finished processing all datasets")
+
+        return results
 
     def create_dataset_splits(self, test_size=0.2, val_size=0.1, random_state=42):
         """
