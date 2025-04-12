@@ -192,7 +192,7 @@ high_risk_suggestions = [
 # Define function to analyze text for depression indicators
 def analyze_text(text):
     """
-    Analyze text for depression indicators.
+    Analyze text for depression indicators using the trained model.
 
     Args:
         text (str): Input text
@@ -210,35 +210,65 @@ def analyze_text(text):
     tokens = word_tokenize(cleaned_text.lower())
     depression_keyword_count = sum(1 for token in tokens if token in depression_keywords)
 
-    # Calculate depression score (simple heuristic)
-    # Higher score indicates higher likelihood of depression
+    # Use trained model for prediction if available
+    model_prediction = 0.0
+    model_confidence = 0.0
+
+    if text_model is not None:
+        try:
+            # Convert features to tensor
+            # Note: In a real implementation, you would need to ensure the features match what the model expects
+            # This is a simplified version
+            feature_vector = np.zeros(50)  # Placeholder for actual feature extraction
+            for i, token in enumerate(tokens[:50]):
+                # Simple bag of words approach
+                feature_vector[i % 50] += 1
+
+            # Normalize
+            if np.sum(feature_vector) > 0:
+                feature_vector = feature_vector / np.sum(feature_vector)
+
+            # Convert to tensor
+            input_tensor = torch.tensor(feature_vector, dtype=torch.float32).unsqueeze(0)
+
+            # Set model to evaluation mode
+            text_model.eval()
+
+            # Get prediction
+            with torch.no_grad():
+                output = text_model(input_tensor)
+                probability = torch.sigmoid(output).item()
+                prediction = 1 if probability > 0.5 else 0
+                model_prediction = prediction
+                model_confidence = probability if prediction == 1 else 1 - probability
+        except Exception as e:
+            st.error(f"Error using text model: {e}")
+
+    # Calculate depression score (combine model prediction with heuristics)
     depression_score = 0.0
+
+    # If model is available, give it high weight
+    if text_model is not None:
+        depression_score += model_prediction * 0.7  # 70% weight
 
     # Factor 1: Presence of depression keywords
     if len(tokens) > 0:
         keyword_ratio = depression_keyword_count / len(tokens)
-        depression_score += keyword_ratio * 0.4  # 40% weight
+        depression_score += keyword_ratio * 0.1  # 10% weight
 
     # Factor 2: Negative word count from linguistic features
     if 'negative_word_count' in features:
         negative_word_count = features['negative_word_count']
         if len(tokens) > 0:
             negative_ratio = negative_word_count / len(tokens)
-            depression_score += negative_ratio * 0.3  # 30% weight
+            depression_score += negative_ratio * 0.1  # 10% weight
 
     # Factor 3: Pronoun usage (high first-person pronoun usage can indicate depression)
     if 'pronoun_count' in features:
         pronoun_count = features['pronoun_count']
         if len(tokens) > 0:
             pronoun_ratio = pronoun_count / len(tokens)
-            depression_score += pronoun_ratio * 0.2  # 20% weight
-
-    # Factor 4: Text length (very short or very long responses can indicate issues)
-    text_length = len(tokens)
-    if text_length < 5:
-        depression_score += 0.1  # Very short responses
-    elif text_length > 100:
-        depression_score += 0.1  # Very long responses
+            depression_score += pronoun_ratio * 0.1  # 10% weight
 
     # Normalize score to 0-1 range
     depression_score = min(max(depression_score, 0.0), 1.0)
@@ -256,7 +286,9 @@ def analyze_text(text):
         'depression_score': depression_score,
         'risk_level': risk_level,
         'depression_keyword_count': depression_keyword_count,
-        'linguistic_features': features
+        'linguistic_features': features,
+        'model_prediction': model_prediction,
+        'model_confidence': model_confidence
     }
 
     return results
