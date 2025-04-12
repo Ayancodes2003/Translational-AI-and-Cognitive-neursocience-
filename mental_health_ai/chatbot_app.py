@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import json
 import tempfile
-# import librosa  # Commented out as it's causing issues
+import librosa
 import io
 from PIL import Image
 import base64
@@ -23,6 +23,9 @@ import nltk
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 import re
+import pickle
+from scipy.io import wavfile
+import time
 
 # Download NLTK resources
 try:
@@ -51,11 +54,56 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Add models directory to path
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models'))
+
+# Import model classes
+from models.text_models import TextCNN
+from models.audio_models import AudioLSTM
+from models.eeg_models import EEGCNN
+
 # Initialize text processor
 text_processor = TextProcessor(None, None)
 
 # Initialize audio processor
 audio_processor = AudioProcessor(None, None)
+
+# Initialize risk assessor
+risk_assessor = RiskAssessor()
+
+# Initialize report generator
+report_generator = ClinicalReportGenerator()
+
+# Load trained models
+def load_model(modality, model_type):
+    """Load a trained model."""
+    try:
+        if modality == "text":
+            if model_type == "TextCNN":
+                model = TextCNN(input_dim=50)  # Adjust input_dim based on your feature size
+                model.load_state_dict(torch.load(f"results/text/{model_type}/model.pt", map_location=torch.device('cpu')))
+                return model
+        elif modality == "audio":
+            if model_type == "AudioLSTM":
+                model = AudioLSTM(input_dim=80)  # Adjust input_dim based on your feature size
+                model.load_state_dict(torch.load(f"results/audio/{model_type}/model.pt", map_location=torch.device('cpu')))
+                return model
+        elif modality == "eeg":
+            if model_type == "EEGCNN":
+                model = EEGCNN(input_dim=64)  # Adjust input_dim based on your feature size
+                model.load_state_dict(torch.load(f"results/eeg/{model_type}/model.pt", map_location=torch.device('cpu')))
+                return model
+
+        st.error(f"Model {model_type} for {modality} not found.")
+        return None
+    except Exception as e:
+        st.error(f"Error loading model: {e}")
+        return None
+
+# Load models
+text_model = load_model("text", "TextCNN")
+audio_model = load_model("audio", "AudioLSTM")
+eeg_model = load_model("eeg", "EEGCNN")
 
 # Define depression keywords
 depression_keywords = [
